@@ -101,7 +101,7 @@ async function main() {
 
   app.use(errorHandler);
 
-  server.listen(env.port, () => {
+  server.listen(env.port, "0.0.0.0", () => {
     console.log(`MediNova API (production) running on http://localhost:${env.port}`);
     console.log(`  Frontend: ${env.clientUrl}`);
   });

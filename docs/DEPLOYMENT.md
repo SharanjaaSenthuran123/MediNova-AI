@@ -61,7 +61,34 @@ npm run seed
 | `STRIPE_SECRET_KEY` | optional — payments |
 | `TWILIO_*` | optional — emergency SMS |
 
-Use [render.yaml](../render.yaml) for one-click Render deploy.
+Use [render.yaml](../render.yaml) for one-click Render deploy, or [server/railway.toml](../server/railway.toml) for Railway.
+
+### Railway
+
+1. Go to [railway.app/new](https://railway.app/new) → **Deploy from GitHub repo** → select `MediNova-AI`
+2. **Settings → Source → Root Directory** → `server`
+3. **Settings → Config file path** → `/server/railway.toml` (optional — auto-detected if root is `server/`)
+4. **Variables** tab — add:
+
+| Variable | Value |
+|----------|-------|
+| `NODE_ENV` | `production` |
+| `MONGODB_URI` | your Atlas URI |
+| `JWT_SECRET` | long random string |
+| `CLIENT_URL` | `http://localhost:3000` (or Vercel URL) |
+
+5. **Settings → Networking → Generate Domain**
+6. Verify: `GET https://YOUR-DOMAIN.up.railway.app/health`
+
+CLI alternative (from `server/`):
+
+```bash
+railway login
+railway init
+railway variables set MONGODB_URI="..." JWT_SECRET="..." CLIENT_URL="http://localhost:3000"
+railway up
+railway domain
+```
 
 ---
 
