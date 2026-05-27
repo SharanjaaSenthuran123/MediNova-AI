@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { ToastProvider } from "@/components/providers/ToastProvider";
+import { SocketProvider } from "@/components/providers/SocketProvider";
+import { SkipToContent } from "@/components/ui/SkipToContent";
 import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
 import "./globals.css";
 
@@ -24,8 +27,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans`}>
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className={`${inter.variable} font-sans`} suppressHydrationWarning>
+        <ThemeProvider>
+          <ToastProvider />
+          <SocketProvider>
+            <SkipToContent />
+            {children}
+          </SocketProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

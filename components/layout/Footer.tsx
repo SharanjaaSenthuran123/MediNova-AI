@@ -4,12 +4,12 @@ import { APP_NAME } from "@/lib/constants";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-card">
+    <footer className="relative border-t border-white/20 glass dark:border-white/10">
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <section className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <section>
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <Link href="/" className="group flex items-center gap-2 font-semibold">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow transition-transform duration-300 group-hover:scale-105">
                 <Activity className="h-5 w-5" />
               </span>
               {APP_NAME}
@@ -26,17 +26,32 @@ export function Footer() {
               <h4 className="text-sm font-semibold">Product</h4>
               <ul className="mt-3 space-y-2 text-sm text-muted">
                 <li>
-                  <Link href="/dashboard" className="hover:text-primary">
+                  <Link href="/#features" className="transition-colors hover:text-primary">
+                    Features
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/#how-it-works" className="transition-colors hover:text-primary">
+                    How it works
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/#roadmap" className="transition-colors hover:text-primary">
+                    Roadmap
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/dashboard" className="transition-colors hover:text-primary">
                     Dashboard
                   </Link>
                 </li>
                 <li>
-                  <Link href="/symptom-checker" className="hover:text-primary">
+                  <Link href="/symptom-checker" className="transition-colors hover:text-primary">
                     Symptom Checker
                   </Link>
                 </li>
                 <li>
-                  <Link href="/emergency" className="hover:text-primary">
+                  <Link href="/emergency" className="transition-colors hover:text-primary">
                     Emergency SOS
                   </Link>
                 </li>
@@ -48,18 +63,18 @@ export function Footer() {
                 <li>
                   <Link
                     href="/prescription-reader"
-                    className="hover:text-primary"
+                    className="transition-colors hover:text-primary"
                   >
                     Prescription OCR
                   </Link>
                 </li>
                 <li>
-                  <Link href="/barcode-scanner" className="hover:text-primary">
-                    Barcode Scanner
+                  <Link href="/barcode-scanner" className="transition-colors hover:text-primary">
+                    Smart Medicine Scanner
                   </Link>
                 </li>
                 <li>
-                  <Link href="/reports" className="hover:text-primary">
+                  <Link href="/reports" className="transition-colors hover:text-primary">
                     Reports
                   </Link>
                 </li>
@@ -75,7 +90,7 @@ export function Footer() {
           </section>
         </section>
 
-        <p className="mt-8 border-t border-border pt-6 text-center text-sm text-muted">
+        <p className="mt-8 border-t border-white/20 pt-6 text-center text-sm text-muted dark:border-white/10">
           © {new Date().getFullYear()} {APP_NAME}. Built for hackathon demo.
         </p>
       </section>

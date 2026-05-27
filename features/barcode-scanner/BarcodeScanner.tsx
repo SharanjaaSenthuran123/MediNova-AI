@@ -1,186 +1,417 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
-import { Camera, CameraOff, ScanBarcode } from "lucide-react";
+import { Flashlight, FlashlightOff, ScanBarcode, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { findMedicineByBarcode } from "@/data/medicines";
-import type { Medicine } from "@/types/medicine";
+import { analyzeMedicinePhoto } from "@/features/barcode-scanner/analyze-photo.helpers";
+import { BarcodeSampleChips } from "@/features/barcode-scanner/BarcodeSampleChips";
+import { BarcodePhotoUpload } from "@/features/barcode-scanner/BarcodePhotoUpload";
+import { BarcodeScanOverlay } from "@/features/barcode-scanner/BarcodeScanOverlay";
+import { lookupMedicineBarcode } from "@/features/barcode-scanner/lookup.helpers";
+import {
+  scanBarcodeFromImage,
+  validateBarcodePhoto,
+} from "@/lib/barcode-image";
+import type {
+  Medicine,
+  MedicineAIInsight,
+  MedicinePhotoAnalysis,
+} from "@/types/medicine";
+import { cn } from "@/lib/utils";
 
-interface ScannerControls {
-  stop: () => void;
-}
+const SCAN_STAGES = [
+  "Analyzing package with vision AI",
+  "Reading label text",
+  "Matching medicine database",
+  "Generating safety insights",
+] as const;
 
 interface BarcodeScannerProps {
-  onScan: (medicine: Medicine | null, barcode: string) => void;
+  onResult: (
+    medicine: Medicine | null,
+    barcode: string,
+    meta?: {
+      aiInsight?: MedicineAIInsight | null;
+      demoMode?: boolean;
+      message?: string;
+      photoAnalysis?: MedicinePhotoAnalysis | null;
+      photoDemoMode?: boolean;
+      photoMessage?: string;
+    }
+  ) => void;
+  onError: (message: string) => void;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
-export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const controlsRef = useRef<ScannerControls | null>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [starting, setStarting] = useState(false);
+export function BarcodeScanner({
+  onResult,
+  onError,
+  onLoadingChange,
+}: BarcodeScannerProps) {
   const [manualCode, setManualCode] = useState("");
-  const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanStage, setScanStage] = useState<string>(SCAN_STAGES[0]);
+  const [flashlightOn, setFlashlightOn] = useState(false);
+  const [lastLookup, setLastLookup] = useState<string | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
 
-  const stopCamera = useCallback(() => {
-    controlsRef.current?.stop();
-    controlsRef.current = null;
-    setCameraActive(false);
+  const clearProgressTimer = useCallback(() => {
+    if (progressTimer.current) {
+      clearInterval(progressTimer.current);
+      progressTimer.current = null;
+    }
   }, []);
 
-  const lookupBarcode = useCallback(
-    (code: string) => {
-      const trimmed = code.trim();
-      if (!trimmed) return;
-      setLastScanned(trimmed);
-      const medicine = findMedicineByBarcode(trimmed) ?? null;
-      onScan(medicine, trimmed);
+  const revokePreview = useCallback(() => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setPhotoPreviewUrl(null);
+  }, []);
+
+  const setLoadingState = useCallback(
+    (next: boolean) => {
+      onLoadingChange?.(next);
     },
-    [onScan]
+    [onLoadingChange]
   );
 
-  const startCamera = useCallback(async () => {
-    setStarting(true);
-    setCameraError(null);
+  const startProgress = useCallback(
+    (from = 8) => {
+      let stageIndex = 0;
+      setScanProgress(from);
+      setScanStage(SCAN_STAGES[0]);
+      clearProgressTimer();
+      progressTimer.current = setInterval(() => {
+        setScanProgress((p) => Math.min(p + 5, 90));
+        stageIndex = Math.min(stageIndex + 1, SCAN_STAGES.length - 1);
+        setScanStage(SCAN_STAGES[stageIndex]);
+      }, 480);
+    },
+    [clearProgressTimer]
+  );
 
-    try {
-      const reader = new BrowserMultiFormatReader();
+  const finishProgress = useCallback(() => {
+    clearProgressTimer();
+    setScanProgress(100);
+    setScanStage("Analysis complete");
+    setTimeout(() => {
+      setScanning(false);
+      setAnalyzingPhoto(false);
+      setScanProgress(0);
+      setLoadingState(false);
+    }, 400);
+  }, [clearProgressTimer, setLoadingState]);
 
-      const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-      const backCamera =
-        devices.find((d) => /back|rear|environment/i.test(d.label)) ??
-        devices[0];
+  const runLookup = useCallback(
+    async (
+      code: string,
+      extras?: {
+        photoAnalysis?: MedicinePhotoAnalysis | null;
+        photoDemoMode?: boolean;
+        photoMessage?: string;
+      }
+    ) => {
+      const trimmed = code.trim();
+      if (!trimmed || scanning) return;
 
-      if (!backCamera) {
-        setCameraError("No camera found. Use manual barcode entry below.");
+      onError("");
+      setLastLookup(trimmed);
+      setScanning(true);
+      setLoadingState(true);
+      startProgress(extras?.photoAnalysis ? 55 : 8);
+
+      try {
+        const result = await lookupMedicineBarcode(trimmed);
+        onResult(result.medicine, result.barcode, {
+          aiInsight: result.aiInsight,
+          demoMode: result.demoMode,
+          message: result.message,
+          photoAnalysis: extras?.photoAnalysis,
+          photoDemoMode: extras?.photoDemoMode,
+          photoMessage: extras?.photoMessage,
+        });
+      } catch {
+        onError("Lookup failed. Check the barcode and try again.");
+      } finally {
+        finishProgress();
+      }
+    },
+    [scanning, onResult, onError, setLoadingState, startProgress, finishProgress]
+  );
+
+  const handlePhotoSelect = useCallback(
+    async (file: File) => {
+      if (scanning || analyzingPhoto) return;
+
+      const validationError = validateBarcodePhoto(file);
+      if (validationError) {
+        onError(validationError);
         return;
       }
 
-      if (!videoRef.current) return;
+      onError("");
+      revokePreview();
 
-      const controls = await reader.decodeFromVideoDevice(
-        backCamera.deviceId,
-        videoRef.current,
-        (result) => {
-          if (result) {
-            lookupBarcode(result.getText());
-            controlsRef.current?.stop();
-            controlsRef.current = null;
-            setCameraActive(false);
+      const url = URL.createObjectURL(file);
+      previewUrlRef.current = url;
+      setPhotoPreviewUrl(url);
+
+      setAnalyzingPhoto(true);
+      setScanning(true);
+      setLoadingState(true);
+      startProgress(10);
+
+      try {
+        const photoPromise = analyzeMedicinePhoto(file);
+        const barcodePromise = scanBarcodeFromImage(file).catch(() => null);
+
+        const [photoResult, zxingBarcode] = await Promise.all([
+          photoPromise,
+          barcodePromise,
+        ]);
+
+        setScanProgress(70);
+        setScanStage(SCAN_STAGES[2]);
+
+        const analysis = photoResult.analysis;
+        const barcode =
+          zxingBarcode?.trim() ||
+          photoResult.barcode?.trim() ||
+          analysis.barcode?.trim() ||
+          "";
+
+        if (barcode) {
+          setManualCode(barcode);
+        }
+
+        let lookup = null;
+        if (barcode) {
+          try {
+            lookup = await lookupMedicineBarcode(barcode);
+          } catch {
+            /* lookup optional when photo analysis succeeded */
           }
         }
-      );
 
-      controlsRef.current = controls;
-      setCameraActive(true);
-    } catch {
-      setCameraError(
-        "Camera access denied or unavailable. Use manual entry below."
-      );
-    } finally {
-      setStarting(false);
-    }
-  }, [lookupBarcode]);
+        const dbMedicine =
+          photoResult.databaseMatch ?? lookup?.medicine ?? null;
+
+        onResult(dbMedicine, barcode || "photo-analysis", {
+          aiInsight: lookup?.aiInsight ?? null,
+          demoMode: lookup?.demoMode ?? true,
+          message: lookup?.message ?? photoResult.message,
+          photoAnalysis: analysis,
+          photoDemoMode: photoResult.demoMode,
+          photoMessage: photoResult.message,
+        });
+      } catch {
+        onError(
+          "Could not analyze that photo. Use a clear, well-lit image of the medicine label or box."
+        );
+        setAnalyzingPhoto(false);
+        setScanning(false);
+        setScanProgress(0);
+        setLoadingState(false);
+        clearProgressTimer();
+        return;
+      }
+
+      finishProgress();
+    },
+    [
+      scanning,
+      analyzingPhoto,
+      onError,
+      revokePreview,
+      setLoadingState,
+      startProgress,
+      finishProgress,
+      onResult,
+      clearProgressTimer,
+    ]
+  );
+
+  const handleClearPhoto = useCallback(() => {
+    revokePreview();
+    setAnalyzingPhoto(false);
+    setScanProgress(0);
+  }, [revokePreview]);
+
+  const busy = scanning || analyzingPhoto;
+  const showOverlay = busy;
 
   useEffect(() => {
     return () => {
-      controlsRef.current?.stop();
+      clearProgressTimer();
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
     };
-  }, []);
+  }, [clearProgressTimer]);
 
   return (
-    <Card className="space-y-4">
-      <div className="relative overflow-hidden rounded-xl bg-black/90">
-        <video
-          ref={videoRef}
-          className="aspect-[4/3] w-full object-cover"
-          muted
-          playsInline
-        />
-
-        {!cameraActive && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 p-6 text-center">
-            <ScanBarcode className="h-12 w-12 text-primary" />
-            <p className="text-sm text-muted">
-              Point your camera at a medicine barcode
+    <Card variant="elevated" padding="none" className="overflow-hidden">
+      <div className="border-b border-border/60 px-4 py-3 sm:px-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Sparkles className="h-4 w-4 text-primary" />
+              MediScan Analyzer
+            </p>
+            <p className="mt-0.5 text-xs text-muted">
+              Upload a medicine photo for AI analysis, or enter a barcode
             </p>
           </div>
-        )}
-
-        {cameraActive && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="scanner-frame h-40 w-56 rounded-lg border-2 border-primary/60" />
-          </div>
-        )}
-      </div>
-
-      {cameraError && (
-        <p className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-foreground">
-          <CameraOff className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-          {cameraError}
-        </p>
-      )}
-
-      <div className="flex flex-wrap gap-2">
-        {!cameraActive ? (
           <Button
             type="button"
-            onClick={startCamera}
-            disabled={starting}
-            className="flex-1"
+            variant={flashlightOn ? "primary" : "outline"}
+            size="sm"
+            className="shrink-0 touch-manipulation"
+            onClick={() => setFlashlightOn((v) => !v)}
+            aria-pressed={flashlightOn}
+            aria-label={flashlightOn ? "Turn flashlight off" : "Turn flashlight on"}
           >
-            {starting ? (
-              <>
-                <LoadingSpinner size="sm" />
-                Starting camera...
-              </>
+            {flashlightOn ? (
+              <Flashlight className="h-4 w-4" />
             ) : (
-              <>
-                <Camera className="h-4 w-4" />
-                Start scanner
-              </>
+              <FlashlightOff className="h-4 w-4" />
             )}
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={stopCamera}
-            className="flex-1"
-          >
-            Stop camera
-          </Button>
-        )}
-      </div>
-
-      <div className="border-t border-border pt-4">
-        <p className="mb-2 text-sm font-medium">Manual barcode entry</p>
-        <div className="flex gap-2">
-          <Input
-            placeholder="e.g. 8901234567890"
-            value={manualCode}
-            onChange={(e) => setManualCode(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && lookupBarcode(manualCode)}
-          />
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => lookupBarcode(manualCode)}
-          >
-            Lookup
+            <span className="hidden sm:inline">
+              {flashlightOn ? "Light on" : "Light"}
+            </span>
           </Button>
         </div>
-        <p className="mt-2 text-xs text-muted">
-          Demo codes: 8901234567890 (Paracetamol), 8901234567891 (Amoxicillin)
-        </p>
-        {lastScanned && (
-          <p className="mt-1 text-xs text-muted">
-            Last scanned: <code>{lastScanned}</code>
+      </div>
+
+      <div className="p-4 sm:p-5">
+        <div
+          className={cn(
+            "relative min-h-[220px] overflow-hidden rounded-2xl border-2 transition-all duration-300 sm:min-h-[260px]",
+            showOverlay ? "border-primary shadow-glow-lg" : "border-border/60",
+            flashlightOn && "barcode-viewport-flashlight"
+          )}
+        >
+          <div className="barcode-border-glow absolute inset-x-0 top-0 z-10 h-0.5 opacity-80" />
+
+          {photoPreviewUrl ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photoPreviewUrl}
+                alt="Medicine package preview"
+                className={cn(
+                  "h-full min-h-[220px] w-full object-contain bg-black/90 sm:min-h-[260px]",
+                  showOverlay && "brightness-90 contrast-110"
+                )}
+              />
+              {showOverlay && (
+                <BarcodeScanOverlay
+                  progress={scanProgress}
+                  stageLabel={scanStage}
+                  flashlightOn={flashlightOn}
+                />
+              )}
+            </>
+          ) : (
+            <div className="barcode-viewport relative flex h-full min-h-[220px] flex-col items-center justify-center px-6 py-8 text-center sm:min-h-[260px]">
+              {!showOverlay && (
+                <>
+                  <ScanBarcode className="h-14 w-14 text-primary/80 animate-float" />
+                  <p className="mt-4 text-sm font-medium text-foreground">
+                    Ready to analyze
+                  </p>
+                  <p className="mt-1 max-w-xs text-xs text-muted/90">
+                    Upload a photo of your medicine package for AI vision
+                    analysis, or enter a barcode below.
+                  </p>
+                  {manualCode && (
+                    <p className="mt-4 rounded-full glass-strong px-3 py-1 font-mono text-xs text-primary">
+                      {manualCode}
+                    </p>
+                  )}
+                </>
+              )}
+              {showOverlay && (
+                <BarcodeScanOverlay
+                  progress={scanProgress}
+                  stageLabel={scanStage}
+                  flashlightOn={flashlightOn}
+                />
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 space-y-4">
+          <BarcodePhotoUpload
+            previewUrl={photoPreviewUrl}
+            disabled={busy}
+            scanning={busy}
+            onFileSelect={(file) => void handlePhotoSelect(file)}
+            onClear={handleClearPhoto}
+            onInvalidFile={onError}
+          />
+
+          <div className="space-y-3 border-t border-border/60 pt-4">
+            <label htmlFor="barcode-input" className="text-sm font-medium text-foreground">
+              Or enter barcode number
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                id="barcode-input"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="e.g. 8901234567890"
+                value={manualCode}
+                disabled={busy}
+                className="min-h-11 font-mono text-base sm:text-sm"
+                onChange={(e) => setManualCode(e.target.value.replace(/\s/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && runLookup(manualCode)}
+              />
+              <Button
+                type="button"
+                disabled={busy || !manualCode.trim()}
+                className="min-h-11 w-full touch-manipulation sm:w-auto sm:min-w-[140px]"
+                onClick={() => runLookup(manualCode)}
+              >
+                {busy ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    Analyzing…
+                  </>
+                ) : (
+                  <>
+                    <ScanBarcode className="h-4 w-4" />
+                    Analyze
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <BarcodeSampleChips
+              onSelect={(code) => {
+                revokePreview();
+                setManualCode(code);
+                runLookup(code);
+              }}
+              disabled={busy}
+            />
+          </div>
+        </div>
+
+        {lastLookup && !busy && (
+          <p className="mt-3 text-xs text-muted">
+            Last analyzed:{" "}
+            <code className="font-mono text-foreground">{lastLookup}</code>
           </p>
         )}
       </div>

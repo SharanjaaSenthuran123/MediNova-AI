@@ -1,5 +1,6 @@
 import {
   Activity,
+  Droplets,
   HeartPulse,
   Moon,
   Pill,
@@ -15,6 +16,7 @@ const iconMap: Record<string, LucideIcon> = {
   Moon,
   Pill,
   Activity,
+  Droplets,
 };
 
 const statusVariant = {
@@ -40,9 +42,9 @@ export function StatCard({ stat, className }: StatCardProps) {
   const Icon = iconMap[stat.icon] ?? Activity;
 
   return (
-    <Card className={cn("card-hover", className)}>
+    <Card interactive className={cn("group", className)}>
       <section className="flex items-start justify-between">
-        <section className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <section className="gradient-icon flex h-11 w-11 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110">
           <Icon className="h-5 w-5" />
         </section>
         <Badge variant={statusVariant[stat.status]}>

@@ -35,7 +35,7 @@ export const medicines: Medicine[] = [
     genericName: "Omeprazole",
     dosage: "20mg — 1 capsule before breakfast",
     manufacturer: "GastroMed Inc.",
-    expiry: "2027-01-08",
+    expiry: "2025-01-08",
     warnings: [
       "Long-term use requires medical supervision",
       "Do not crush or chew capsules",
@@ -48,7 +48,7 @@ export const medicines: Medicine[] = [
     genericName: "Metformin HCl",
     dosage: "500mg — 1 tablet twice daily with meals",
     manufacturer: "DiabetesCare Ltd.",
-    expiry: "2026-09-30",
+    expiry: "2026-06-15",
     warnings: [
       "Monitor blood sugar regularly",
       "Stay hydrated",

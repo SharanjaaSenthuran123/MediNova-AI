@@ -1,83 +1,197 @@
 # MediNova-AI
 
-AI Powered Smart Healthcare Ecosystem — a modern healthcare web app built with Next.js, Tailwind CSS, and a beginner-friendly modular architecture.
+**AI Powered Smart Healthcare Ecosystem** — a Next.js healthcare demo that connects AI symptom guidance, prescription OCR, smart medicine scanning, emergency SOS simulation, and health analytics in one polished hackathon-ready product.
 
-## Phase 1 Complete
+> **Educational demo only.** Not a medical diagnosis tool. Emergency SOS is a simulation unless integrated with real alert providers.
 
-Phase 1 delivers the product foundation:
+---
 
-- Next.js 15 + TypeScript + Tailwind CSS v3
-- Healthcare color theme with light/dark mode
-- Reusable UI components (Button, Card, Badge, Input, ThemeToggle, etc.)
-- Landing page (hero, features, dashboard preview, how-it-works, safety, CTA)
-- Dashboard shell with sidebar, mobile nav, mock health stats
-- Placeholder routes for upcoming features
-
-## Phase 2 Complete
-
-Phase 2 adds the core AI and analytics experience:
-
-- **AI Symptom Checker** — form (symptoms, age, gender, duration, severity), secure `/api/symptom-checker` route, OpenAI integration with smart demo fallback
-- **Structured results** — possible conditions, urgency badge, suggestions, when to seek care, disclaimer
-- **Chart.js dashboard** — heart rate line chart, sleep bar chart, medicine adherence chart, AI insight card
-
-## Phase 3 Complete
-
-Phase 3 adds interactive demo features for prescriptions, medicines, and emergencies:
-
-- **Prescription OCR Reader** — image upload/drag-drop, Tesseract.js in-browser OCR with progress bar, raw text + detected medicine cards
-- **Barcode Scanner** — camera scanning with animated frame, manual barcode fallback, mock medicine lookup (dosage, warnings, expiry)
-- **Emergency SOS Simulation** — large SOS button with 5s countdown, simulated location, caretaker contacts, step-by-step alert timeline
-
-## Tech Stack
-
-- **Framework:** Next.js (App Router)
-- **Styling:** Tailwind CSS v4
-- **Icons:** Lucide React
-- **Theme:** next-themes
-
-## Getting Started
+## Quick start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). Full setup: **[docs/SETUP.md](docs/SETUP.md)**
 
-## Project Structure
+```bash
+cp .env.local.example .env.local   # optional — OpenAI for live AI
+```
+
+Without `OPENAI_API_KEY`, the Symptom Checker uses smart demo fallback so presentations never break.
+
+---
+
+## 3-minute demo script
+
+Follow **[docs/DEMO-SCRIPT.md](docs/DEMO-SCRIPT.md)** for a judge-ready walkthrough:
+
+1. **Homepage** — pitch + five live features + future roadmap
+2. **Symptom Checker** — example chips → AI result with urgency
+3. **Prescription OCR** — sample chip → Tesseract extraction
+4. **Smart Medicine Scanner** — upload a photo or enter code `8901234567890` → medicine details
+5. **Emergency SOS** — quick demo → replayable timeline
+6. **Dashboard & Reports** — charts, filters, deep-linked reports
+
+---
+
+## Live features
+
+| Route | Feature | Tech |
+|-------|---------|------|
+| `/` | Landing page + roadmap vision | Next.js, Tailwind |
+| `/symptom-checker` | AI symptom analysis | OpenAI + demo fallback |
+| `/prescription-reader` | Prescription OCR | Tesseract.js (browser) |
+| `/barcode-scanner` | Smart Medicine Scanner | @zxing/browser + OpenAI Vision |
+| `/emergency` | SOS simulation | Timeline + replay |
+| `/dashboard` | Health analytics | Chart.js + mock data |
+| `/reports` | Filterable health records | Expandable demo reports |
+| `/profile` | User profile & emergency contacts | Cookie session + JSON store |
+| `/history` | Saved symptom, OCR, and scan history | Auto-save from features |
+| `/assistant` | AI health assistant chat | OpenAI + symptom context |
+| `/reminders` | Smart medicine reminders | History-based suggestions |
+| `/appointments` | Doctor appointment booking | Demo scheduling UI |
+
+---
+
+## Screenshots
+
+Add PNGs to [`public/screenshots/`](public/screenshots/) — see **[docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)** for capture steps.
+
+| Homepage | Symptom Checker | Dashboard |
+|----------|-----------------|-----------|
+| *Add `homepage-hero.png`* | *Add `symptom-checker-result.png`* | *Add `dashboard.png`* |
+
+---
+
+## Tech stack
+
+- **Framework:** Next.js 15 (App Router)
+- **Styling:** Tailwind CSS v3
+- **AI:** OpenAI API (optional)
+- **OCR:** Tesseract.js (browser)
+- **Charts:** Chart.js + react-chartjs-2
+- **Barcode:** @zxing/browser
+- **Icons:** Lucide React
+- **Theme:** next-themes
+
+---
+
+## Environment variables
+
+```env
+OPENAI_API_KEY=sk-your-key-here    # optional
+OPENAI_MODEL=gpt-4o-mini           # optional
+```
+
+---
+
+## Deploy
+
+Deploy to Vercel in minutes — **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
+
+```bash
+npm run build
+npm run start
+```
+
+---
+
+## Future roadmap
+
+Homepage **Product roadmap** section highlights Phase 12 live integrations (assistant, reminders, appointments, wearables). Full plan: **[docs/FUTURE-ROADMAP.md](docs/FUTURE-ROADMAP.md)**
+
+---
+
+## API routes
+
+| Method | Route | Purpose |
+|--------|-------|---------|
+| `POST` | `/api/symptom-checker` | AI analysis (OpenAI or demo) |
+| `GET` | `/api/medicine-lookup?barcode=` | Mock medicine lookup |
+| `POST` | `/api/emergency-alert` | Simulated emergency response |
+| `GET/POST/PATCH` | `/api/user` | Demo profile + session |
+| `GET` | `/api/history` | Activity history |
+| `POST` | `/api/history/symptoms` | Save symptom check |
+| `POST` | `/api/history/prescriptions` | Save OCR result |
+| `POST` | `/api/history/barcodes` | Save barcode lookup |
+| `GET/PUT` | `/api/user/contacts` | Emergency contacts |
+| `POST` | `/api/assistant` | AI health assistant chat |
+| `GET/POST/PATCH/DELETE` | `/api/reminders` | Medicine reminders |
+| `GET/POST/PATCH` | `/api/appointments` | Appointment booking |
+| `GET/POST/DELETE` | `/api/wearables` | Wearable sync simulation |
+
+---
+
+## Project structure
 
 ```
-app/                 # Pages and layouts
+app/
+  (dashboard)/       # Shared DashboardLayout — URLs unchanged (/dashboard, /symptom-checker, …)
+  api/               # Server routes
+  page.tsx           # Public homepage
 components/
-  layout/            # Navbar, Sidebar, Footer, DashboardLayout
-  ui/                # Reusable UI primitives
-  dashboard/         # Dashboard widgets
-  healthcare/        # Healthcare-specific cards
-  providers/         # Theme provider
-data/                # Mock data
-lib/                 # Utils and constants
-types/               # TypeScript types
-features/            # Feature modules (Phase 2+)
+  ui/                # Button, Card, SampleChips, FeatureLoadingCard, …
+  layout/            # Navbar, Sidebar, FeaturePageShell, DashboardLayout
+  homepage/          # Landing sections
+  dashboard/         # Charts, stat cards, report widgets
+  healthcare/        # SymptomResultCard, MedicineCard, …
+features/            # Feature clients, forms, *.helpers.ts
+hooks/               # useConfigStatus, …
+lib/
+  api/               # client.ts, require-user.ts
+  schemas/           # Zod validation (symptom, user, integration)
+  auth/              # Session helpers
+  db/                # Demo JSON store
+data/                # Mock demo data
+types/               # TypeScript domain types
+docs/                # Guides — start with STRUCTURE.md
 ```
 
-## Environment Variables
+**Full architecture guide:** **[docs/STRUCTURE.md](docs/STRUCTURE.md)**
 
-Copy `.env.local.example` to `.env.local` when you reach Phase 2 (OpenAI Symptom Checker):
+---
 
-```
-OPENAI_API_KEY=your_key_here
-```
+## Documentation
 
-## Roadmap
+| Doc | Purpose |
+|-----|---------|
+| [SETUP.md](docs/SETUP.md) | Install, env vars, troubleshooting |
+| [STRUCTURE.md](docs/STRUCTURE.md) | Folder map, patterns, where to put new code |
+| [DEMO-SCRIPT.md](docs/DEMO-SCRIPT.md) | 3-minute hackathon presentation |
+| [PRESENTATION.md](docs/PRESENTATION.md) | Phase 10 overview & checklist |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Vercel deploy checklist |
+| [BACKEND.md](docs/BACKEND.md) | Phase 11 profiles, history, APIs |
+| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | Phase 12 assistant, reminders, appointments |
+| [FUTURE-ROADMAP.md](docs/FUTURE-ROADMAP.md) | Post-hackathon product vision |
+| [POLISH-QA.md](docs/POLISH-QA.md) | Accessibility & QA checklist |
+| [DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) | UI components & theme |
+| Feature guides | SYMPTOM-CHECKER, PRESCRIPTION-OCR, BARCODE-SCANNER, EMERGENCY-SOS, DASHBOARD, HOMEPAGE |
 
-| Phase | Focus |
-|-------|--------|
-| 1 | Foundation, branding, homepage, dashboard shell |
-| 2 | AI Symptom Checker + Chart.js analytics ✅ |
-| 3 | Prescription OCR, barcode scanner, emergency SOS ✅ |
-| 4 | Polish, deployment, demo script |
+---
+
+## Development phases
+
+Phases 1–12 of the hackathon roadmap are implemented:
+
+| Phase | Focus | Status |
+|-------|--------|--------|
+| 1 | Setup & dev workflow | ✅ |
+| 2 | Design system & layout | ✅ |
+| 3 | Homepage & product story | ✅ |
+| 4 | Health dashboard & analytics | ✅ |
+| 5 | AI Symptom Checker | ✅ |
+| 6 | Prescription OCR Reader | ✅ |
+| 7 | Smart Medicine Scanner | ✅ |
+| 8 | Emergency SOS simulation | ✅ |
+| 9 | Reports, accessibility, polish | ✅ |
+| 10 | README, demo script, deployment | ✅ |
+| 11 | Backend, profiles & history | ✅ |
+| 12 | AI assistant & integrations | ✅ |
+
+---
 
 ## Disclaimer
 
-MediNova-AI is for educational and hackathon demo purposes. It is not a medical diagnosis tool. Always consult qualified healthcare professionals.
+MediNova-AI is for **educational and hackathon demo purposes only**. It does not provide medical diagnosis. OCR and barcode results must be verified with a pharmacist or doctor. Emergency SOS is a **simulation** unless integrated with real alert providers. Always consult qualified healthcare professionals.

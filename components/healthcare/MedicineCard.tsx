@@ -1,6 +1,12 @@
 import { AlertTriangle, Building2, Calendar, Pill } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import {
+  expiryStatusLabel,
+  expiryStatusVariant,
+  formatExpiryDate,
+  getExpiryStatus,
+} from "@/lib/medicine-helpers";
 import type { Medicine } from "@/types/medicine";
 
 interface MedicineCardProps {
@@ -10,6 +16,8 @@ interface MedicineCardProps {
 
 export function MedicineCard({ medicine, variant = "full" }: MedicineCardProps) {
   const isFull = variant === "full" && "barcode" in medicine;
+  const expiryStatus =
+    isFull && medicine.expiry ? getExpiryStatus(medicine.expiry) : null;
 
   return (
     <Card className="border-primary/20">
@@ -19,9 +27,14 @@ export function MedicineCard({ medicine, variant = "full" }: MedicineCardProps) 
             <Pill className="h-5 w-5 text-primary" />
             {medicine.name}
           </CardTitle>
-          {isFull && (
-            <Badge variant="outline">Demo data</Badge>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {expiryStatus && (
+              <Badge variant={expiryStatusVariant[expiryStatus]}>
+                {expiryStatusLabel[expiryStatus]}
+              </Badge>
+            )}
+            {isFull && <Badge variant="outline">Verified lookup</Badge>}
+          </div>
         </div>
         {isFull && (
           <CardDescription>{medicine.genericName}</CardDescription>
@@ -36,6 +49,10 @@ export function MedicineCard({ medicine, variant = "full" }: MedicineCardProps) 
           </p>
         )}
 
+        {isFull && medicine.description && (
+          <p className="text-muted">{medicine.description}</p>
+        )}
+
         {isFull && (
           <>
             <p className="flex items-center gap-2 text-muted">
@@ -44,8 +61,19 @@ export function MedicineCard({ medicine, variant = "full" }: MedicineCardProps) 
             </p>
             <p className="flex items-center gap-2 text-muted">
               <Calendar className="h-4 w-4 shrink-0" />
-              Expires {medicine.expiry}
+              Expires {formatExpiryDate(medicine.expiry)}
             </p>
+            {expiryStatus === "expired" && (
+              <p className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+                This product is past its expiry date. Do not use expired
+                products — dispose safely and consult a pharmacist.
+              </p>
+            )}
+            {expiryStatus === "expiring_soon" && (
+              <p className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-foreground">
+                Expiring within 60 days. Check your stock and refill if needed.
+              </p>
+            )}
           </>
         )}
 

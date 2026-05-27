@@ -12,6 +12,7 @@ interface FileUploadProps {
   onClear?: () => void;
   disabled?: boolean;
   label?: string;
+  hint?: string;
 }
 
 export function FileUpload({
@@ -21,6 +22,7 @@ export function FileUpload({
   onClear,
   disabled,
   label = "Upload prescription image",
+  hint = "PNG, JPG, or WEBP — prescription photo",
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -82,22 +84,20 @@ export function FileUpload({
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
           className={cn(
-            "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 transition-colors",
+            "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 transition-all duration-300",
             dragOver
-              ? "border-primary bg-primary/5"
-              : "border-border bg-card hover:border-primary/50 hover:bg-primary/5",
+              ? "border-primary bg-primary/10 shadow-glow"
+              : "glass-input hover:border-primary/50 hover:bg-primary/5",
             disabled && "pointer-events-none opacity-50"
           )}
         >
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <span className="gradient-icon flex h-14 w-14 items-center justify-center rounded-2xl">
             <Upload className="h-7 w-7" />
           </span>
           <p className="mt-4 text-sm font-medium">
             Drag & drop or click to upload
           </p>
-          <p className="mt-1 text-xs text-muted">
-            PNG, JPG, or WEBP — prescription photo
-          </p>
+          <p className="mt-1 text-xs text-muted">{hint}</p>
           <ImageIcon className="mt-3 h-4 w-4 text-muted" />
         </div>
       )}

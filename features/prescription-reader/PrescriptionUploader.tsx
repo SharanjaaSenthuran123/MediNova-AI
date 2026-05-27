@@ -1,121 +1,194 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import Tesseract from "tesseract.js";
-import { ScanText } from "lucide-react";
+import { ScanText, ShieldCheck } from "lucide-react";
+import { useConfigStatus } from "@/hooks/useConfigStatus";
+import { imageFileTypeHint, isAcceptedImageFile } from "@/lib/image-file";
+import { scanPrescriptionImage } from "@/lib/prescription-scan-client";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { FileUpload } from "@/components/ui/FileUpload";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { PrescriptionDropZone } from "@/features/prescription-reader/PrescriptionDropZone";
+import { PrescriptionSampleChips } from "@/features/prescription-reader/PrescriptionSampleChips";
 import type { OCRResult } from "@/types/medicine";
 import {
-  cleanOCRText,
-  extractMedicineNames,
+  getDemoOCRResult,
+  type OCRProgressState,
 } from "@/features/prescription-reader/ocr.helpers";
+
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 interface PrescriptionUploaderProps {
   onResult: (result: OCRResult) => void;
   onError: (message: string) => void;
+  onLoadingChange?: (loading: boolean) => void;
+  onProgressChange?: (state: OCRProgressState) => void;
+  onPreviewChange?: (url: string | null) => void;
 }
 
 export function PrescriptionUploader({
   onResult,
   onError,
+  onLoadingChange,
+  onProgressChange,
+  onPreviewChange,
 }: PrescriptionUploaderProps) {
+  const { status: configStatus } = useConfigStatus();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [progressState, setProgressState] = useState<OCRProgressState>({
+    progress: 0,
+    stage: "idle",
+    stageLabel: "Ready to scan",
+  });
+
+  function updateProgress(state: OCRProgressState) {
+    setProgressState(state);
+    onProgressChange?.(state);
+  }
+
+  function setLoadingState(next: boolean) {
+    setLoading(next);
+    onLoadingChange?.(next);
+    if (!next) {
+      updateProgress({
+        progress: 0,
+        stage: "idle",
+        stageLabel: "Ready to scan",
+      });
+    }
+  }
 
   const handleFileSelect = useCallback(
     (selected: File) => {
+      if (!isAcceptedImageFile(selected)) {
+        onError(`Please upload a ${imageFileTypeHint()} image.`);
+        return;
+      }
+      if (selected.size > MAX_FILE_BYTES) {
+        onError("Image is too large. Please use a file under 10 MB.");
+        return;
+      }
       if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const url = URL.createObjectURL(selected);
       setFile(selected);
-      setPreviewUrl(URL.createObjectURL(selected));
+      setPreviewUrl(url);
+      onPreviewChange?.(url);
+      onError("");
     },
-    [previewUrl]
+    [previewUrl, onError, onPreviewChange]
   );
 
   const handleClear = useCallback(() => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setFile(null);
     setPreviewUrl(null);
-    setProgress(0);
-  }, [previewUrl]);
+    onPreviewChange?.(null);
+    updateProgress({
+      progress: 0,
+      stage: "idle",
+      stageLabel: "Ready to scan",
+    });
+  }, [previewUrl, onPreviewChange]);
+
+  function handleSampleSelect(index: number) {
+    onError("");
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+      onPreviewChange?.(null);
+    }
+    setFile(null);
+    onResult(getDemoOCRResult(index));
+  }
 
   async function runOCR() {
     if (!file) return;
 
-    setLoading(true);
-    setProgress(0);
+    setLoadingState(true);
+    updateProgress({
+      progress: 5,
+      stage: "loading-engine",
+      stageLabel: "Loading OCR engine…",
+    });
 
     try {
-      const result = await Tesseract.recognize(file, "eng", {
-        logger: (m) => {
-          if (m.status === "recognizing text" && typeof m.progress === "number") {
-            setProgress(Math.round(m.progress * 100));
-          }
-        },
-      });
+      const result = await scanPrescriptionImage(file, updateProgress);
 
-      const rawText = cleanOCRText(result.data.text);
-
-      if (!rawText.trim()) {
+      if (!result.rawText.trim()) {
         onError(
           "No text detected. Try a clearer, well-lit photo of the prescription."
         );
         return;
       }
 
-      const medicines = extractMedicineNames(rawText);
-
-      onResult({ rawText, medicines });
-    } catch {
-      onError("OCR failed. Please try another image or check file format.");
+      onResult(result);
+    } catch (err) {
+      console.error("Prescription OCR failed:", err);
+      onError(
+        "Could not read the prescription. Check your connection, use a clearer photo, or try a sample prescription."
+      );
     } finally {
-      setLoading(false);
+      setLoadingState(false);
     }
   }
 
   return (
-    <Card>
-      <FileUpload
-        onFileSelect={handleFileSelect}
+    <Card variant="elevated" className="space-y-1">
+      <div className="mb-4 flex items-center gap-2 rounded-xl gradient-panel px-3 py-2">
+        <ShieldCheck className="h-4 w-4 text-primary" />
+        <p className="text-xs text-muted">
+          {configStatus?.liveAi
+            ? "Live AI vision reads prescriptions accurately — image sent securely for analysis"
+            : "Browser OCR runs locally — add OPENAI_API_KEY for more accurate AI reading"}
+        </p>
+      </div>
+
+      <PrescriptionDropZone
         previewUrl={previewUrl}
-        onClear={handleClear}
+        scanning={loading && Boolean(previewUrl)}
+        scanProgress={progressState.progress}
+        scanStageLabel={progressState.stageLabel}
         disabled={loading}
+        onFileSelect={handleFileSelect}
+        onClear={handleClear}
+        onInvalidFile={onError}
       />
 
-      {loading && (
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted">Extracting text...</span>
-            <span className="font-medium text-primary">{progress}%</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-border">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-      )}
+      <ul className="mt-4 space-y-1.5 text-xs text-muted">
+        <li className="flex items-center gap-2">
+          <span className="h-1 w-1 rounded-full bg-primary" />
+          Use flat, well-lit photos for best OCR accuracy
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="h-1 w-1 rounded-full bg-primary" />
+          Handwritten scripts may need manual verification
+        </li>
+      </ul>
+
+      <div className="mt-5">
+        <PrescriptionSampleChips
+          onSelect={handleSampleSelect}
+          disabled={loading}
+        />
+      </div>
 
       <Button
         type="button"
-        className="mt-4 w-full"
+        className="mt-5 w-full shadow-glow"
         disabled={!file || loading}
         onClick={runOCR}
       >
-        {loading ? (
+        {loading && file ? (
           <>
             <LoadingSpinner size="sm" />
-            Running OCR...
+            Scanning… {progressState.progress}%
           </>
         ) : (
           <>
             <ScanText className="h-4 w-4" />
-            Extract medicines
+            Start OCR scan
           </>
         )}
       </Button>

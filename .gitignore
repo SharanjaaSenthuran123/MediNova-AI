@@ -1,5 +1,5 @@
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -13,6 +13,7 @@
 
 # next.js
 /.next/
+/.production-build
 /out/
 
 # production
@@ -30,6 +31,9 @@ yarn-error.log*
 
 # env files
 .env*.local
+
+# local demo database (Phase 11)
+/.data/
 
 # vercel
 .vercel
