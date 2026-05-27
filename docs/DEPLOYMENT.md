@@ -5,7 +5,7 @@ MediNova-AI is a **split-stack** application:
 | Service | Host | Technology |
 |---------|------|------------|
 | **Frontend** | Vercel | Next.js 15 |
-| **API + WebSockets** | Render / Railway | Express + Socket.IO |
+| **API + WebSockets** | Koyeb / Render / Railway | Express + Socket.IO |
 | **Database** | MongoDB Atlas | Mongoose |
 
 Local development runs both with `npm run dev`.
@@ -42,24 +42,48 @@ npm run seed
 
 ---
 
-## 2. Backend (Render / Railway)
+## 2. Backend (Koyeb / Render / Railway)
 
 **Root directory:** `server/`  
 **Build command:** `npm install && npm run build`  
 **Start command:** `npm start`  
 **Health check:** `GET /health`
 
-### Required environment variables
+### Free hosting options (2026)
 
-| Variable | Example |
-|----------|---------|
-| `MONGODB_URI` | `mongodb+srv://...` |
-| `JWT_SECRET` | long random string (required in production) |
-| `CLIENT_URL` | `https://your-app.vercel.app` |
-| `PORT` | `4000` (Render sets automatically) |
-| `OPENAI_API_KEY` | optional — live AI features |
-| `STRIPE_SECRET_KEY` | optional — payments |
-| `TWILIO_*` | optional — emergency SMS |
+| Platform | Credit card? | Good for this API? | Notes |
+|----------|--------------|-------------------|-------|
+| **[Koyeb](https://www.koyeb.com)** | **No** | **Best free option** | 512 MB RAM, GitHub deploy, supports Docker |
+| **[Vercel](https://vercel.com)** | No | Frontend only | Deploy Next.js here, not Express |
+| **MongoDB Atlas** | No | Database (already using) | Free M0 cluster |
+| Render | No to sign up, card to create services | Yes | You hit 402 — billing required |
+| Railway | Varies | Yes | Free tier limited / upgrade prompts |
+| Fly.io | Yes (new accounts) | Yes | `server/Dockerfile` ready, needs card |
+| Supabase | No | **No** | Postgres + Edge Functions — not Express hosting |
+
+**Recommended stack for zero cost:** Koyeb (API) + Vercel (frontend) + MongoDB Atlas (DB).
+
+### Koyeb (recommended — no credit card)
+
+Uses [server/Dockerfile](../server/Dockerfile).
+
+1. Go to [koyeb.com](https://www.koyeb.com) → sign up (no card)
+2. **Create Web Service** → **GitHub** → repo `MediNova-AI`
+3. **Builder** → **Dockerfile**
+4. **Work directory** → `server`
+5. **Dockerfile path** → `Dockerfile`
+6. **Ports** → `4000` (HTTP)
+7. **Environment variables**:
+
+| Variable | Value |
+|----------|-------|
+| `NODE_ENV` | `production` |
+| `MONGODB_URI` | your Atlas URI |
+| `JWT_SECRET` | long random string |
+| `CLIENT_URL` | `http://localhost:3000` |
+
+8. Click **Deploy** → copy your `*.koyeb.app` URL
+9. Verify: `GET https://YOUR-APP.koyeb.app/health`
 
 Use [render.yaml](../render.yaml) for one-click Render deploy, or [server/railway.toml](../server/railway.toml) for Railway.
 
@@ -89,6 +113,18 @@ railway variables set MONGODB_URI="..." JWT_SECRET="..." CLIENT_URL="http://loca
 railway up
 railway domain
 ```
+
+### Required environment variables (all platforms)
+
+| Variable | Example |
+|----------|---------|
+| `MONGODB_URI` | `mongodb+srv://...` |
+| `JWT_SECRET` | long random string (required in production) |
+| `CLIENT_URL` | `https://your-app.vercel.app` |
+| `PORT` | set automatically by host |
+| `OPENAI_API_KEY` | optional — live AI features |
+| `STRIPE_SECRET_KEY` | optional — payments |
+| `TWILIO_*` | optional — emergency SMS |
 
 ---
 
