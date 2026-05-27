@@ -1,6 +1,7 @@
 import mongoose, { Schema, type Document, type Types } from "mongoose";
+import type { Timestamps } from "../types/timestamps.js";
 
-export interface IAppointment extends Document {
+export interface IAppointment extends Document, Timestamps {
   userId: Types.ObjectId;
   doctorId?: Types.ObjectId;
   providerName: string;

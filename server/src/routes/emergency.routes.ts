@@ -6,7 +6,7 @@ import {
 
   defaultEmergencyLocation,
 
-} from "../../../lib/emergency-defaults.js";
+} from "../lib/emergency-defaults.js";
 
 import { isDemoMode } from "../config/database.js";
 

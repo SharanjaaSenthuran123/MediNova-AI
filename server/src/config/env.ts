@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import { resolveMongoUri } from "../../../lib/mongo-uri.js";
+import { resolveMongoUri } from "../lib/mongo-uri.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 dotenv.config({ path: path.join(root, ".env.local") });

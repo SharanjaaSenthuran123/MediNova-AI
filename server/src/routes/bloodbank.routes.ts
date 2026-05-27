@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AuthRequest } from "../middleware/auth.js";
 import { optionalAuth, requireAuth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { routeParam } from "../utils/routeParam.js";
 import {
   createBloodEmergencyRequest,
   donorRespondToRequest,
@@ -121,7 +122,7 @@ router.post(
     try {
       const request = await donorRespondToRequest(
         donor._id.toString(),
-        req.params.id,
+        routeParam(req.params.id),
         parsed.data.response
       );
       return res.json({ request });

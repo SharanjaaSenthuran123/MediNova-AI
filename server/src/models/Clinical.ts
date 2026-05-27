@@ -1,4 +1,5 @@
 import mongoose, { Schema, type Document, type Types } from "mongoose";
+import type { Timestamps } from "../types/timestamps.js";
 
 export interface IMedicine extends Document {
   barcode: string;
@@ -27,7 +28,7 @@ const medicineSchema = new Schema<IMedicine>(
 
 export const Medicine = mongoose.model<IMedicine>("Medicine", medicineSchema);
 
-export interface IMedicineScan extends Document {
+export interface IMedicineScan extends Document, Timestamps {
   userId: Types.ObjectId;
   barcode: string;
   medicineName: string;
@@ -53,7 +54,7 @@ export const MedicineScan = mongoose.model<IMedicineScan>(
   scanSchema
 );
 
-export interface IPrescription extends Document {
+export interface IPrescription extends Document, Timestamps {
   userId: Types.ObjectId;
   medicines: string[];
   rawTextPreview: string;
@@ -94,7 +95,7 @@ export const Prescription = mongoose.model<IPrescription>(
   prescriptionSchema
 );
 
-export interface ISymptomRecord extends Document {
+export interface ISymptomRecord extends Document, Timestamps {
   userId: Types.ObjectId;
   input: Record<string, unknown>;
   result: Record<string, unknown>;
@@ -161,7 +162,7 @@ const reminderSchema = new Schema<IReminder>(
 
 export const Reminder = mongoose.model<IReminder>("Reminder", reminderSchema);
 
-export interface IEmergencyAlert extends Document {
+export interface IEmergencyAlert extends Document, Timestamps {
   userId: Types.ObjectId;
   type: string;
   message: string;
@@ -189,7 +190,7 @@ export const EmergencyAlert = mongoose.model<IEmergencyAlert>(
   emergencySchema
 );
 
-export interface INotification extends Document {
+export interface INotification extends Document, Timestamps {
   userId: Types.ObjectId;
   title: string;
   body: string;

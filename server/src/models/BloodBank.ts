@@ -1,4 +1,5 @@
 import mongoose, { Schema, type Document, type Types } from "mongoose";
+import type { Timestamps } from "../types/timestamps.js";
 
 export const BLOOD_GROUPS = [
   "A+",
@@ -42,7 +43,7 @@ bloodStockSchema.index({ bloodGroup: 1, hospitalName: 1 });
 
 export const BloodStock = mongoose.model<IBloodStock>("BloodStock", bloodStockSchema);
 
-export interface IBloodRequest extends Document {
+export interface IBloodRequest extends Document, Timestamps {
   userId: Types.ObjectId;
   patientName: string;
   bloodGroup: BloodGroup;

@@ -8,6 +8,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { updateOrderStatus } from "../services/order.service.js";
 import { toOrderDto } from "../utils/order-dto.js";
+import { routeParam } from "../utils/routeParam.js";
 import { notifyUser } from "../services/notification.service.js";
 
 const router = Router();
@@ -97,7 +98,7 @@ router.patch(
     if (!parsed.success) return res.status(400).json({ error: "Invalid status" });
 
     const order = await updateOrderStatus(
-      req.params.id,
+      routeParam(req.params.id),
       parsed.data.status,
       req.user!._id.toString()
     );

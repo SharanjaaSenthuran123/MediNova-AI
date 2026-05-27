@@ -1,5 +1,6 @@
 import mongoose, { Schema, type Document, type Types } from "mongoose";
 import type { PriorityCategory } from "../services/priority.service.js";
+import type { Timestamps } from "../types/timestamps.js";
 
 export type OrderStatus =
   | "pending"
@@ -18,7 +19,7 @@ export interface IOrderItem {
   unitPrice: number;
 }
 
-export interface IDeliveryOrder extends Document {
+export interface IDeliveryOrder extends Document, Timestamps {
   userId: Types.ObjectId;
   pharmacyId: Types.ObjectId;
   deliveryAgentId?: Types.ObjectId;

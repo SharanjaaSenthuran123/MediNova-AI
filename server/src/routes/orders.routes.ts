@@ -7,6 +7,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { placeMedicineOrder, updateOrderStatus, getPriorityQueue, cancelMedicineOrder, requestOrderReturn } from "../services/order.service.js";
 import { toOrderDto } from "../utils/order-dto.js";
+import { routeParam } from "../utils/routeParam.js";
 import { buildInvoiceHtml } from "../services/invoice.service.js";
 import { User } from "../models/User.js";
 import { expandMedicineSearchTerms } from "../data/pharmacy-catalog.js";
@@ -62,8 +63,8 @@ router.get(
             ? {
                 id: (m.pharmacyId as { _id: { toString(): string } })._id.toString(),
                 name: (m.pharmacyId as { name: string }).name,
-                lat: (m.pharmacyId as { lat: number }).lat,
-                lng: (m.pharmacyId as { lng: number }).lng,
+                lat: (m.pharmacyId as unknown as { lat: number }).lat,
+                lng: (m.pharmacyId as unknown as { lng: number }).lng,
               }
             : null,
       })),
@@ -164,7 +165,7 @@ router.post(
 
     try {
       const order = await requestOrderReturn(
-        req.params.id,
+        routeParam(req.params.id),
         req.user!._id.toString(),
         parsed.data.reason
       );
@@ -239,7 +240,7 @@ router.post(
   asyncHandler(async (req: AuthRequest, res) => {
     try {
       const order = await cancelMedicineOrder(
-        req.params.id,
+        routeParam(req.params.id),
         req.user!._id.toString()
       );
       const populated = await DeliveryOrder.findById(order._id)
@@ -267,7 +268,7 @@ router.patch(
 
     try {
       const order = await updateOrderStatus(
-        req.params.id,
+        routeParam(req.params.id),
         parsed.data.status,
         req.user!._id.toString()
       );

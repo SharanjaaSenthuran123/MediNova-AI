@@ -148,7 +148,7 @@ router.get(
         status: o.status,
         pharmacyId:
           o.pharmacyId && typeof o.pharmacyId === "object" && "name" in o.pharmacyId
-            ? toPharmacyDto(o.pharmacyId as Parameters<typeof toPharmacyDto>[0])
+            ? toPharmacyDto(o.pharmacyId as unknown as Parameters<typeof toPharmacyDto>[0])
             : o.pharmacyId,
         createdAt: (o as { createdAt?: Date }).createdAt,
       })),
