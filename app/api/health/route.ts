@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-
-const API_URL = process.env.API_URL ?? "http://localhost:4000";
+import { fetchApi, getApiUrl } from "@/lib/api/fetch-api";
 
 /** Local health check — not proxied; used to detect if Express API is reachable. */
 export async function GET() {
+  const API_URL = getApiUrl();
   try {
-    const res = await fetch(`${API_URL}/health`, {
-      cache: "no-store",
-      signal: AbortSignal.timeout(3000),
-    });
+    const res = await fetchApi("/health", {}, 5000);
 
     if (!res.ok) {
       return NextResponse.json(

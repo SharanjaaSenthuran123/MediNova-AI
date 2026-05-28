@@ -1,4 +1,4 @@
-const API_URL = process.env.API_URL ?? "http://localhost:4000";
+import { fetchApi } from "./fetch-api";
 
 export async function forwardAuthRequest(
   path: string,
@@ -12,12 +12,11 @@ export async function forwardAuthRequest(
     headers.set("Cookie", init.cookieHeader);
   }
 
-  const res = await fetch(`${API_URL}/api/auth${path}`, {
+  const res = await fetchApi(`/api/auth${path}`, {
     ...init,
     headers,
     body:
       init.json !== undefined ? JSON.stringify(init.json) : (init.body as BodyInit | undefined),
-    cache: "no-store",
   });
 
   const data = await res.json().catch(() => ({}));
@@ -32,3 +31,5 @@ export function buildCookieHeader(
     .map((entry) => `${entry.name}=${entry.value}`);
   return parts.length > 0 ? parts.join("; ") : undefined;
 }
+
+export { getApiUrl } from "./fetch-api";
