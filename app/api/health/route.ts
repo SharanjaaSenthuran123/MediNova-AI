@@ -1,6 +1,8 @@
+import "@/lib/env/runtime-env";
 import { NextResponse } from "next/server";
 import {
   checkMongoHealth,
+  formatMongoError,
   useDirectAuth,
   vercelSetupError,
 } from "@/lib/auth/direct-auth";
@@ -40,8 +42,8 @@ export async function GET() {
   }
 
   if (useDirectAuth()) {
-    try {
-      await checkMongoHealth();
+    const mongoCheck = await checkMongoHealth();
+    if (mongoCheck.ok) {
       return NextResponse.json({
         ok: true,
         api: false,
@@ -50,18 +52,16 @@ export async function GET() {
         hint:
           "Login works via MongoDB. Set API_URL to your deployed Express API for pharmacy, orders, and real-time features.",
       });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "MongoDB connection failed";
-      return NextResponse.json(
-        {
-          ok: false,
-          api: false,
-          mongo: false,
-          error: message,
-        },
-        { status: 503 }
-      );
     }
+    return NextResponse.json(
+      {
+        ok: false,
+        api: false,
+        mongo: false,
+        error: mongoCheck.error,
+      },
+      { status: 503 }
+    );
   }
 
   return NextResponse.json(

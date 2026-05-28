@@ -15,6 +15,7 @@
     "mongo:set": "node scripts/set-mongodb-uri.mjs",
     "mongo:test": "node scripts/test-mongo.mjs",
     "vercel:setup": "node scripts/setup-vercel-env.mjs",
+    "vercel:fix": "node scripts/fix-vercel-env.mjs",
     "env:check": "node -e \"fetch('http://localhost:3000/api/config/status').then(r=>r.json()).then(j=>console.log(JSON.stringify(j,null,2))).catch(e=>console.error('Start npm run dev first'))\"",
     "build": "node scripts/kill-dev-ports.mjs && npx next build",
     "postbuild": "node scripts/mark-production-build.mjs",

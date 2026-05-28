@@ -1,3 +1,4 @@
+import "@/lib/env/runtime-env";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { connectDB, isMongoConfigured } from "@/lib/mongodb";
@@ -150,10 +151,24 @@ export async function directSession(token: string) {
   return { ok: true as const, user: publicUser(user), token };
 }
 
+export function formatMongoError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/whitelist|IP that isn't whitelisted|ServerSelection/i.test(message)) {
+    return (
+      "MongoDB Atlas blocked the connection. In Atlas → Network Access, add 0.0.0.0/0 (allow from anywhere), wait 1–2 minutes, then redeploy Vercel."
+    );
+  }
+  return message;
+}
+
 export async function checkMongoHealth() {
   if (!isMongoConfigured()) {
     return { ok: false as const, error: "MONGODB_URI is not configured" };
   }
-  await connectDB();
-  return { ok: true as const };
+  try {
+    await connectDB();
+    return { ok: true as const };
+  } catch (err) {
+    return { ok: false as const, error: formatMongoError(err) };
+  }
 }

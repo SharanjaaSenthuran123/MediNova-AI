@@ -1,3 +1,4 @@
+import "@/lib/env/runtime-env";
 import mongoose from "mongoose";
 import { resolveMongoUri } from "./mongo-uri";
 

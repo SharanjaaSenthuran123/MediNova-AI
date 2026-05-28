@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { forwardAuthRequest } from "@/lib/api/auth-proxy";
-import { directLogin, useDirectAuth, vercelSetupError } from "@/lib/auth/direct-auth";
+import { directLogin, formatMongoError, useDirectAuth, vercelSetupError } from "@/lib/auth/direct-auth";
 import { setAuthCookies } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -14,7 +14,8 @@ export async function POST(request: Request) {
       remember?: boolean;
     };
 
-    if (useDirectAuth()) {
+  if (useDirectAuth()) {
+    try {
       const result = await directLogin(body);
       if (!result.ok) {
         return NextResponse.json({ error: result.error }, { status: result.status });
@@ -26,7 +27,13 @@ export async function POST(request: Request) {
         remember: body.remember,
       });
       return NextResponse.json({ user: result.user, token: result.token });
+    } catch (err) {
+      return NextResponse.json(
+        { error: formatMongoError(err) },
+        { status: 503 }
+      );
     }
+  }
 
     const { res, data } = await forwardAuthRequest("/login", {
       method: "POST",

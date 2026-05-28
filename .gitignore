@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files
 .env*.local
+.env.vercel*
 
 # local demo database (Phase 11)
 /.data/
