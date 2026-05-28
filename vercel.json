@@ -1,0 +1,11 @@
+{
+  "framework": "nextjs",
+  "env": {
+    "CLIENT_URL": "https://medi-nova-ai-2fqi.vercel.app"
+  },
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  }
+}

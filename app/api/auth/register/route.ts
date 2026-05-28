@@ -7,6 +7,8 @@ import {
 } from "@/lib/auth/direct-auth";
 import { setAuthCookies } from "@/lib/auth/session";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

@@ -54,11 +54,10 @@ export async function connectDB(): Promise<typeof mongoose | null> {
 }
 
 export function isMongoConfigured(): boolean {
-  const direct = process.env.MONGODB_URI?.trim();
-  const hasAtlas = Boolean(
-    process.env.MONGODB_ATLAS_CLUSTER?.trim() &&
-      process.env.MONGODB_ATLAS_USER?.trim() &&
-      process.env.MONGODB_ATLAS_PASSWORD !== undefined
-  );
-  return Boolean(direct || hasAtlas);
+  const uri = resolveMongoUri(process.env);
+  if (!uri.trim()) return false;
+  if (process.env.VERCEL && /127\.0\.0\.1|localhost/i.test(uri)) {
+    return false;
+  }
+  return true;
 }

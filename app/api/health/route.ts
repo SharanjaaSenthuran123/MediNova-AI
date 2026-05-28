@@ -7,6 +7,8 @@ import {
 import { fetchApi, getApiUrl, isRemoteApiConfigured } from "@/lib/api/fetch-api";
 
 /** Local health check — detects Express API or Vercel MongoDB auth mode. */
+export const runtime = "nodejs";
+
 export async function GET() {
   const API_URL = getApiUrl();
 

@@ -13,6 +13,8 @@ import {
 } from "@/lib/auth/session";
 import { cookies } from "next/headers";
 
+export const runtime = "nodejs";
+
 export async function GET() {
   try {
     const jar = await cookies();

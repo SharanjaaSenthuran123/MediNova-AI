@@ -17,10 +17,25 @@ export function useDirectAuth(): boolean {
 }
 
 export function vercelSetupError(): string {
+  const onVercel = Boolean(process.env.VERCEL);
+  const mongoUri = process.env.MONGODB_URI?.trim() ?? "";
+  const localMongo =
+    /127\.0\.0\.1|localhost/i.test(mongoUri) ||
+    (!mongoUri &&
+      !process.env.MONGODB_ATLAS_CLUSTER?.trim());
+
+  if (onVercel && localMongo) {
+    return (
+      "Vercel needs MongoDB Atlas (local MongoDB will not work in the cloud). " +
+      "From your project root run: npm run vercel:setup -- --atlas-uri \"mongodb+srv://USER:PASS@CLUSTER.mongodb.net/medinova\" " +
+      "Or set MONGODB_URI, JWT_SECRET, and CLIENT_URL in Vercel → Settings → Environment Variables, then redeploy."
+    );
+  }
+
   return (
-    "Production is missing environment variables. In Vercel → Settings → Environment Variables, set " +
-    "MONGODB_URI, JWT_SECRET, and CLIENT_URL (https://medi-nova-ai-2fqi.vercel.app). " +
-    "For pharmacy, orders, and real-time features, also deploy the Express API and set API_URL."
+    "Production is missing environment variables. Set MONGODB_URI (Atlas), JWT_SECRET, and " +
+    "CLIENT_URL (https://medi-nova-ai-2fqi.vercel.app) on Vercel, then redeploy. " +
+    "Quick setup: npm run vercel:setup (after npx vercel login)."
   );
 }
 
