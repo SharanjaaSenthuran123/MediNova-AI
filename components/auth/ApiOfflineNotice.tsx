@@ -5,8 +5,8 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 
 type ApiStatus = "checking" | "online" | "offline";
 
-const MAX_RETRIES = 8;
-const RETRY_MS = 1500;
+const MAX_RETRIES = 40;
+const RETRY_MS = 2000;
 
 export function ApiOfflineNotice() {
   const [status, setStatus] = useState<ApiStatus>("checking");

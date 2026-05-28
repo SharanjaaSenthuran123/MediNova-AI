@@ -89,6 +89,22 @@ async function waitForWeb(maxAttempts = 90) {
   return false;
 }
 
+async function warmHealthRoute() {
+  for (let attempt = 1; attempt <= 20; attempt++) {
+    try {
+      const res = await fetch(`${LOGIN_URL}/api/health`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(5000),
+      });
+      if (res.ok) return true;
+    } catch {
+      // route still compiling
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  return false;
+}
+
 const child = spawn("npx", ["next", "dev", "-p", "3000"], {
   cwd: root,
   // Ignore stdin so Next.js keeps running when started from a background terminal.
@@ -99,6 +115,7 @@ const child = spawn("npx", ["next", "dev", "-p", "3000"], {
 
 void (async () => {
   if (await waitForWeb()) {
+    await warmHealthRoute();
     console.log(`Opening login page at ${LOGIN_URL} ...`);
     openLoginPage();
   } else {

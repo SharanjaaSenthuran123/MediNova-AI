@@ -105,6 +105,19 @@ async function main() {
     console.log(`MediNova API (production) running on http://localhost:${env.port}`);
     console.log(`  Frontend: ${env.clientUrl}`);
   });
+
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(
+        `\nPort ${env.port} is already in use. From the project root run:\n` +
+          `  node scripts/kill-dev-ports.mjs\n` +
+          `  npm run dev\n`
+      );
+    } else {
+      console.error("Server error:", err.message);
+    }
+    process.exit(1);
+  });
 }
 
 main().catch((err) => {

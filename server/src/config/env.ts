@@ -1,12 +1,7 @@
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
+import { loadEnvFiles } from "./loadEnv.js";
 import { resolveMongoUri } from "../lib/mongo-uri.js";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-dotenv.config({ path: path.join(root, ".env.local") });
-dotenv.config({ path: path.join(root, ".env") });
-dotenv.config();
+loadEnvFiles();
 
 export const env = {
   port: Number(process.env.PORT ?? 4000),

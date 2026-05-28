@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-
-const MONGODB_URI = process.env.MONGODB_URI;
+import { resolveMongoUri } from "./mongo-uri";
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -21,9 +20,14 @@ if (!global.__medinovaMongoose) {
   global.__medinovaMongoose = cached;
 }
 
-/** Connect to MongoDB (cached for Next.js hot reload). Returns null if MONGODB_URI is unset. */
+function getMongoUri(): string {
+  return resolveMongoUri(process.env);
+}
+
+/** Connect to MongoDB (cached for Next.js hot reload). Returns null if no URI is configured. */
 export async function connectDB(): Promise<typeof mongoose | null> {
-  if (!MONGODB_URI) {
+  const uri = getMongoUri();
+  if (!uri.trim()) {
     return null;
   }
 
@@ -32,9 +36,17 @@ export async function connectDB(): Promise<typeof mongoose | null> {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
-    });
+    cached.promise = mongoose
+      .connect(uri, { serverSelectionTimeoutMS: 15000 })
+      .then((conn) => {
+        console.log("MongoDB Connected");
+        return conn;
+      })
+      .catch((err: Error) => {
+        cached.promise = null;
+        console.error("MongoDB connection failed:", err.message);
+        throw err;
+      });
   }
 
   cached.conn = await cached.promise;
@@ -42,5 +54,11 @@ export async function connectDB(): Promise<typeof mongoose | null> {
 }
 
 export function isMongoConfigured(): boolean {
-  return Boolean(MONGODB_URI?.trim());
+  const direct = process.env.MONGODB_URI?.trim();
+  const hasAtlas = Boolean(
+    process.env.MONGODB_ATLAS_CLUSTER?.trim() &&
+      process.env.MONGODB_ATLAS_USER?.trim() &&
+      process.env.MONGODB_ATLAS_PASSWORD !== undefined
+  );
+  return Boolean(direct || hasAtlas);
 }
