@@ -126,18 +126,18 @@ export function LoginForm() {
       </p>
 
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted">
-        <p className="mb-1 font-medium text-foreground">Demo only (no MongoDB)</p>
+        <p className="mb-1 font-medium text-foreground">Demo accounts</p>
         <p>
           <Mail className="mr-1 inline h-3 w-3" />
           patient@medinova.ai · doctor@medinova.ai · admin@medinova.ai
         </p>
         <p className="mt-1">Password: demo123</p>
         <p className="mt-2 border-t border-primary/10 pt-2">
-          Your own email?{" "}
+          New account?{" "}
           <Link href="/register" className="font-medium text-primary hover:underline">
             Create account
           </Link>{" "}
-          after MongoDB is running (see docs/SETUP.md).
+          (requires MongoDB — local: npm run dev, production: Vercel env vars).
         </p>
       </div>
     </form>

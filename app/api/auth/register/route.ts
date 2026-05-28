@@ -1,10 +1,28 @@
 import { NextResponse } from "next/server";
 import { forwardAuthRequest } from "@/lib/api/auth-proxy";
+import {
+  directRegister,
+  useDirectAuth,
+  vercelSetupError,
+} from "@/lib/auth/direct-auth";
 import { setAuthCookies } from "@/lib/auth/session";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
+    if (useDirectAuth()) {
+      const result = await directRegister(body);
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+      await setAuthCookies({
+        userId: result.user.id,
+        token: result.token,
+        role: result.user.role,
+      });
+      return NextResponse.json({ user: result.user, token: result.token });
+    }
 
     const { res, data } = await forwardAuthRequest("/register", {
       method: "POST",
@@ -28,12 +46,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(data);
   } catch {
-    return NextResponse.json(
-      {
-        error:
-          "Cannot reach the MediNova API. Run npm run dev from the project root and ensure MongoDB is running.",
-      },
-      { status: 503 }
-    );
+    return NextResponse.json({ error: vercelSetupError() }, { status: 503 });
   }
 }
